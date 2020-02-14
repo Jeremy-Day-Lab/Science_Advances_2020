@@ -1,0 +1,272 @@
+---
+title: "A dopamine-induced gene expression signature regulates neuronal function and cocaine response - Adult NAc Analysis"
+author: 
+date: 
+output:
+  word_document: default
+  fig_width: 6
+  fig_height: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Libraries 
+To begin, all packages/libraries that will be needed for the analysis will be loaded
+```{r load libraries}
+suppressPackageStartupMessages(library("dplyr"))
+suppressPackageStartupMessages(library("Seurat"))
+suppressPackageStartupMessages(library("svMisc"))
+suppressPackageStartupMessages(library("cowplot"))
+suppressPackageStartupMessages(library("ggplot2"))
+suppressPackageStartupMessages(library("pheatmap"))
+suppressPackageStartupMessages(library("reshape2"))
+suppressPackageStartupMessages(library("gridExtra"))
+suppressPackageStartupMessages(library("RColorBrewer"))
+```
+
+## Data Import and Quality Control
+
+To begin the analysis, CellRanger output will be loaded into the local environment using the Read10X function within the Seurat package. For this dataset, 4 GEM wells were utlized, one well for each Sex and treatment group. 
+```{r Read10X}
+Fem_Sal_data  <- Read10X(data.dir = "~/Bioinformatics/JD0037/Female_Saline/")
+Fem_Coc_data  <- Read10X(data.dir = "~/Bioinformatics/JD0037/Female_Cocaine/")
+Male_Sal_data <- Read10X(data.dir = "~/Bioinformatics/JD0037/Male_Saline/")
+Male_Coc_data <- Read10X(data.dir = "~/Bioinformatics/JD0037/Male_Cocaine/")
+```
+
+A Seurat object is essential to the following analysis. This object will contain raw data, log-normalized data, cellular identities, and other essential information. To create this object, the CreateSeuratObject function within the Seurat package will be used. This function provides two important options when creating the object, min.cells and min.features. These options provide some intital quality control in which genes that are not within a specified number of cells, or cells that do not have a specified number of features are dropped from further analysis. Here, these options will not be utilized as cells will be dropped from the analysis at a later step. 
+```{r CreateSeuratObject}
+Fem_Sal  <- CreateSeuratObject(counts = Fem_Sal_data,min.cells = 1,min.features = 1) 
+Fem_Coc  <- CreateSeuratObject(counts = Fem_Coc_data,min.cells = 1,min.features = 1) 
+Male_Sal <- CreateSeuratObject(counts = Male_Sal_data,min.cells = 1,min.features = 1)  
+Male_Coc <- CreateSeuratObject(counts = Male_Coc_data,min.cells = 1,min.features = 1) 
+```
+
+An important step within single cell RNA-sequencing analysis is removing cells with a high percentage of reads mapping to the mitochondrial genome. A high percentage of cells mapping to the mitochondrial genome is indicative of poor cell health. Here, the PercentageFeatureSet command will be used to calculate the percentage of total reads mapping to the mitochondrial genome. This function will create a feature called percent_mito within each Seurat object. 
+```{r PercentageFeatureSet}
+Fem_Sal  <- PercentageFeatureSet(Fem_Sal, pattern = "^Mt-", col.name = "percent_mito")
+Fem_Coc  <- PercentageFeatureSet(Fem_Coc, pattern = "^Mt-", col.name = "percent_mito")
+Male_Sal <- PercentageFeatureSet(Male_Sal, pattern = "^Mt-", col.name = "percent_mito")
+Male_Coc <- PercentageFeatureSet(Male_Coc, pattern = "^Mt-", col.name = "percent_mito")
+```
+
+After calculating the percentage of total reads mapping to the mitochondrial genome, quality control measures can be taken to remove cells from further analysis that do not meet speciic requirement. For the following analysis, only those cells with more than 200 genes and less than 5% of total reads mapping to the mitochondrial genome will be kept. 
+```{r Subset}
+Fem_Sal  <- subset(x = Fem_Sal, subset  =  nFeature_RNA > 200 & percent_mito < 5)
+Fem_Coc  <- subset(x = Fem_Coc, subset  =  nFeature_RNA > 200 & percent_mito < 5)  
+Male_Sal <- subset(x = Male_Sal, subset =  nFeature_RNA > 200 & percent_mito < 5)  
+Male_Coc <- subset(x = Male_Coc, subset =  nFeature_RNA > 200 & percent_mito < 5)
+```
+
+Now that quality control measures have been taken, the distribution of number of genes and percentage of total reads mapping to the mitochondrial genome can be visualized with a violin plot. 
+```{r VlnPlot,fig.align="center"}
+VlnPlot(Fem_Sal, features = c("nFeature_RNA","percent_mito"), ncol = 2,pt.size = 0)
+VlnPlot(Fem_Coc, features = c("nFeature_RNA","percent_mito"), ncol = 2,pt.size = 0)
+VlnPlot(Male_Sal, features = c("nFeature_RNA","percent_mito"), ncol = 2,pt.size = 0)
+VlnPlot(Male_Coc, features = c("nFeature_RNA","percent_mito"), ncol = 2,pt.size = 0)
+```
+
+## Data Normalization
+Now that the proper quality control measures have been taken, the raw data can be normalized using the Log-normalization method with a scaling factor of 10000. 
+```{r LogNormalize}
+Fem_Sal  <- NormalizeData(Fem_Sal, normalization.method = "LogNormalize", scale.factor = 10000)
+Fem_Coc  <- NormalizeData(Fem_Coc, normalization.method = "LogNormalize", scale.factor = 10000)
+Male_Sal <- NormalizeData(Male_Sal, normalization.method = "LogNormalize", scale.factor = 10000)
+Male_Coc <- NormalizeData(Male_Coc, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+
+Following data normalization, 2000 of the most variable features within each dataset are identified. According to the Seurat documentation, identifying variable features helps highlight biological variation later. 
+```{r FindVariableFeatures}
+Fem_Sal  <- FindVariableFeatures(Fem_Sal, selection.method = "vst", nfeatures = 2000)
+Fem_Coc  <- FindVariableFeatures(Fem_Coc, selection.method = "vst", nfeatures = 2000)
+Male_Sal <- FindVariableFeatures(Male_Sal, selection.method = "vst", nfeatures = 2000)
+Male_Coc <- FindVariableFeatures(Male_Coc, selection.method = "vst", nfeatures = 2000)
+```
+
+## Data Integration
+As stated above, each GEM well for this data set contains one sex and treatment group. Therefore, before integrating all data, additional metadata attributes for sex and treatment will be added.
+```{r AddSexandTreatment}
+#Add treatment information
+Fem_Sal$Stim  <- "Saline"
+Fem_Coc$Stim  <- "Cocaine"
+Male_Sal$Stim <- "Saline"
+Male_Coc$Stim <- "Cocaine"
+#Add sex information
+Fem_Sal$Sex   <- "Female"
+Fem_Coc$Sex   <- "Female"
+Male_Sal$Sex  <- "Male"
+Male_Coc$Sex  <- "Male"
+```
+
+Here, integration anchors are identified using the FindIntegrationAnchors function. These anchors are used to integrate the data. Following the identification of anchors, the data is integrated using the IntegrateData function. 
+```{r IntegrateData}
+All_Groups_log <- FindIntegrationAnchors(object.list = list(Fem_Sal,Fem_Coc,Male_Sal,Male_Coc), dims = 1:17)
+All_Groups_log  <- IntegrateData(anchorset = All_Groups_log,dims = 1:17)
+```
+
+Following integration of the data, a standard workflow will be used to build a UMAP containing all cells. This UMAP will be essential to identifying cell types within the adult rat Nucleus Accumbens. First, data is scaled and then run through a series of dimensionality reduction techniques before identifying clusters for building the UMAP.
+```{r DimensionalityReduction}
+All_Groups_log <- ScaleData(All_Groups_log,verbose = FALSE)
+All_Groups_log <- RunPCA(All_Groups_log,npcs = 17 ,verbose = FALSE)
+All_Groups_log <- RunUMAP(All_Groups_log, reduction = "pca", dims = 1:17)
+All_Groups_log <- FindNeighbors(All_Groups_log, reduction = "pca", dims = 1:17)
+All_Groups_log <- FindClusters(All_Groups_log, resolution = 0.2)
+```
+
+Now that clusters have been identified, the arbitrary numbers can be replaced with cell type identities. The cell type identities can then be added to the metadata and set as the identity for each cell. 
+```{r Give clusters names and set identities}
+All_Groups_log <- RenameIdents(object = All_Groups_log,
+                               "0" = "Olig-1",
+                               "1" = "Drd1-MSN",
+                               "2" = "Drd2-MSN",
+                               "3" = "Olig-2",
+                               "4" = "Astrocytes",
+                               "5" = "Grm8-MSN",
+                               "6" = "GABAergic-undefined",
+                               "7" = "Polydendrocyte",
+                               "8" = "Microglia",
+                               "9" = "Drd3-MSN",
+                               "10" = "Pvalb-Interneuron",
+                               "11" = "Sst-Interneuron",
+                               "12" = "Drd2-MSN-2",
+                               "13" = "Mural",
+                               "14" = "Olig-3",
+                               "15" = "Glutamatergic")
+All_Groups_log$CellType <- Idents(All_Groups_log)
+Idents(All_Groups_log) <- All_Groups_log$CellType
+```
+
+Finally, the UMAP can be visualized. 
+```{r UMAP, fig.align="center"}
+DimPlot(object = All_Groups_log,reduction = "umap",label = TRUE) + NoLegend()
+```
+
+## Identification of Differentially Expressed Genes
+To control input, Seurat source code was modified to enable the testing of every gene within our dataset. To begin, cellular identities are modified to show both celltype and treatment condition. To begin, a list is generated that will contain DEGs for that specific cell type. Then, every element of that list is given a name that corresponds to the specific cell type. This section of the analysis takes ~1.5-2 hours to complete. Thus, when compiling this word document the code was not run. 
+```{r GenerateListandNameIt,eval = FALSE}
+Cluster_Lists <- vector(mode = "list",length = length(unique(All_Groups_log$CellType)))
+names(Cluster_Lists) <- as.character(unique(All_Groups_log$CellType))
+```
+
+Using modified source code, the log2 fold change can be calculated for each gene between cocaine and saline treated cells. 
+```{r CalculateLog2FoldChange,eval = FALSE}
+for(i in names(Cluster_Lists)){
+  #Print the element so we can actually see the cell type as we loop through
+  print(i)
+  #Create a dataframe in each element of the list where FC will be the log2FC and gene will be the name
+  Cluster_Lists[[i]] <- data.frame(log2FC = ( log2(rowMeans(expm1(x = as.matrix(GetAssayData(object = All_Groups_log,slot = "data",assay = "RNA")[,WhichCells(object = All_Groups_log,idents = paste(i,"Cocaine",sep = "_"))])))) -
+                                            log2(rowMeans(expm1(x = as.matrix(GetAssayData(object = All_Groups_log,slot = "data",assay = "RNA")[,WhichCells(object = All_Groups_log,idents = paste(i,"Saline",sep = "_"))]))))),
+                                   gene = row.names(as.matrix(GetAssayData(object = All_Groups_log,slot = "data",assay= "RNA"))[,WhichCells(object = All_Groups_log,idents = paste0(i,"_Cocaine"))]))
+  #Remove infinite values
+  Cluster_Lists[[i]] <-  Cluster_Lists[[i]][!is.infinite(Cluster_Lists[[i]]$FC),]
+  #remove NaN values
+  Cluster_Lists[[i]] <-  Cluster_Lists[[i]][!is.nan(Cluster_Lists[[i]]$FC),]
+}
+```
+
+After calculating log2 fold change of each gene, testing for significant differentially expressed genes can be completed. Here a wilcoxon ranked sum test is used. 
+```{r CompleteStatisticalTesting,eval = FALSE}
+for(i in names(Cluster_Lists)){
+  #Create a data.frame where the rownames are the cells within the clusters 
+  group.info <- data.frame(row.names = c(WhichCells(object = All_Groups_log,idents = paste(i,"Cocaine",sep = "_")),
+                                         WhichCells(object = All_Groups_log,idents = paste(i,"Saline",sep = "_"))))
+  #Create a group column where cocaine is Group1 and saline is group2. The way to do that is to search the rows names for Cocaine and Saline cell identities
+  group.info[WhichCells(object = All_Groups_log,idents = paste(i,"Cocaine",sep = "_")), "group"] <- "Group1"
+  group.info[WhichCells(object = All_Groups_log,idents = paste(i,"Saline",sep = "_")), "group"] <- "Group2"
+  #Make the group column a factor so it can be tested with the wilcox 
+  group.info[, "group"] <- factor(x = group.info[, "group"])
+  #Create an expression matrix where the row.names are the genes found within that cluster - do this by running row.names(Cluster_Lists[[i]])
+  #the columns should be row.names(group.info) which are the cells within that cluster 
+  #Drop maintains the structure of the matrix when subsetting, which is needed when pulling the expression matrix
+  #Pull counts from log-normalized matrix
+  data.use <- GetAssayData(object = All_Groups_log,slot = "data",assay = "RNA")[row.names(Cluster_Lists[[i]]), rownames(x = group.info), drop = FALSE]
+  #Loop through the rows in the expression matrix which are the genes
+  for(l in 1:length(row.names(data.use))){
+    #Print the progress of the loop
+    progress(l,max.value = length(row.names(data.use)))
+    #Calculate p-values for every gene 
+    #Do this by entering the element of the list for the specific cluster that we are running. i will always be the cell type
+    #row.names(data.use)[l] will be the gene name
+    #wilcox.test will test gene by group to see if there are any differences. Then by adding $p.value we can pull only the p-value from the test 
+    Cluster_Lists[[i]][row.names(data.use)[l],"p.val"] <- wilcox.test(data.use[row.names(data.use)[l], ] ~ group.info[,"group"])$p.value
+  }
+}
+```
+Following statistical testing, p-values are adjusted using a bonferroni correction for the total number of genes within the dataset. 
+```{r AdjustPValues,eval = FALSE}
+for(i in 1:length(Cluster_Lists)){
+  #Adjust the p-value with a bonferroni correction
+  Cluster_Lists[[i]]$adj.p.val <- p.adjust(p = Cluster_Lists[[i]]$p.val,method = "bonferroni",n = nrow(GetAssayData(object = All_Groups_log,slot = "data",assay = "RNA")))
+}
+```
+
+
+## Subclustering of Drd1-MSNs
+To begin subclustering, the Seurat object is subset for only Drd1-MSNs. 
+```{r}
+# Subset Drd1-MSNs into new Seurat object. 
+Drd1 <- subset(All_Groups_log, idents = c("Drd1-MSN"))
+```
+
+Following the subset, a new UMAP is generated using the same dimensionality reduction techniques discussed above. 
+```{r}
+# Generate new UMAP with only Drd1-MSN subcluster. This identifies 4 subclusters. 
+Drd1 <- RunUMAP(Drd1, reduction = "pca", dims = 1:17)
+Drd1 <- FindNeighbors(Drd1, reduction = "pca", dims = 1:17)
+Drd1 <- FindClusters(Drd1, resolution = 0.2)
+DimPlot(Drd1, reduction = "umap", pt.size =1.5, label = TRUE, 
+        cols = c("steelblue4", "deepskyblue3", "slategray3", "red")) + coord_fixed(ratio = 1)
+```
+With single nuclei RNA sequencing technology, we now have the ability to interrogate the expression of specific genes within single cells. Here the expression of FosB, a canonical immediate early genes, is plotted on top of the UMAP created in the last step. 
+```{r}
+# Plot specific features
+DefaultAssay(Drd1) <- "RNA"
+FeaturePlot(Drd1, features = c("Fosb"), pt.size =1.5, max.cutoff = 1, cols = c("gray90", "red")) +
+  coord_fixed(ratio = 1)
+```
+To identify genes that predict activated cluster membership, ROC analysis is used. Following ROC testing, the top ten genes marking active cluster membership are written to a csv. 
+```{r}
+# Use ROC analysis to identify genes that predict activated cluster membership. Write file with predictive genes. 
+Drd1_Markers <- FindMarkers(object = Drd1, ident.1 = "3", ident.2 = NULL, test.use = "roc",
+                            assay = "RNA", slot = "data", logfc.threshold = 0, min.pct = 0.1)
+Drd1_Markers_up <- subset(Drd1_Markers, subset=(myAUC >0.5))
+write.csv(Drd1_Markers, "Marker_ROC.csv")
+```
+Now, genes that are cocaine responsive will be identified using ROC analysis. These genes will then be written out to a CSV. 
+```{r}
+# Make Celltype_Stim identity for within-cluster testing
+Drd1$Celltype_Stim <- paste(Idents(Drd1), Drd1$Stim, sep = "_")
+# Find cocaine-responsive genes in activated subcluster. Write file with results. 
+Idents(Drd1) <- Drd1$Celltype_Stim
+Three_Cocaine <- FindMarkers(object = Drd1, ident.1 = "3_Cocaine", 
+                             ident.2 = "3_Saline", test.use = "roc", 
+                             assay = "RNA", slot = "data", logfc.threshold = 0, min.pct = 0.1)
+write.csv(Three_Cocaine, "Responder_ROC.csv")
+```
+
+After testing for both active and responsive genes, a dataframe containing genes from both tests are created. Finally, the predictive power of each gene for both responsiveness and activity are plotted. 
+```{r}
+# Make matrix with Drd1-MSN ROC values only for activated cluster
+Master <- merge(Drd1_Markers, 
+                Three_Cocaine, 
+                by.x = "row.names", 
+                by.y = "row.names")
+
+# Make plot of genes that predict activated cluster membership and genes that predict cocaine or saline treatment. 
+ggplot(Master, aes(power.x, power.y)) +
+  geom_point(color = "steelblue4", size = 4) +
+  geom_density2d(color = "red") +
+  geom_text(aes(label=ifelse(power.x>0.5, as.character(Row.names),'')), nudge_x = 0.01, nudge_y = 0.01, size = 3) +
+  theme_bw() +
+  xlim(0,1) +
+  ylim(0,1) +
+  ylab("ROC Predictive Power for Cocaine Response") +
+  xlab("ROC Predictive Power for Active Cluster Membership")+
+  coord_equal()
+```
+
+```{r SessionInfo}
+sessionInfo()
+```
