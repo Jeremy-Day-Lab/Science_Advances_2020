@@ -1,0 +1,114 @@
+---
+title: "A dopamine-induced gene expression signature regulates neuronal function and cocaine response -Primary Striatal Culture Analysis"
+author: 
+date: "02/02/2020"
+output:
+  word_document: default
+  fig_width: 6
+  fig_height: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Libraries 
+To begin, all packages/libraries that will be needed for the analysis will be loaded
+```{r load libraries}
+suppressPackageStartupMessages(library("dplyr"))
+suppressPackageStartupMessages(library("Seurat"))
+suppressPackageStartupMessages(library("svMisc"))
+suppressPackageStartupMessages(library("cowplot"))
+suppressPackageStartupMessages(library("ggplot2"))
+suppressPackageStartupMessages(library("pheatmap"))
+suppressPackageStartupMessages(library("reshape2"))
+suppressPackageStartupMessages(library("gridExtra"))
+suppressPackageStartupMessages(library("RColorBrewer"))
+```
+
+## Workflow
+The adult analysis includes additional information regarding details about our analysis. This document will include essential code for the culture analysis. 
+```{r}
+Veh <- Read10X(data.dir = "~/Bioinformatics/JD0034/95_GTF/Veh_Output/")
+DA  <- Read10X(data.dir = "~/Bioinformatics/JD0034/95_GTF/DA_Output/")
+SKF <- Read10X(data.dir = "~/Bioinformatics/JD0034/95_GTF/SKF_Output/")
+KCl <- Read10X(data.dir = "~/Bioinformatics/JD0034/95_GTF/KCL_Output/")
+
+#Create the Seurat object 
+#Using arbitrary cutoffs here. THis allows us to interrogate the quality of every cell, while reserving the right to remove some at 
+#a later QC point. 
+Veh <- CreateSeuratObject(counts = Veh,min.cells = 1,min.features = 1) 
+DA  <- CreateSeuratObject(counts = DA,min.cells = 1,min.features = 1) 
+SKF <- CreateSeuratObject(counts = SKF,min.cells = 1,min.features = 1) 
+KCl <- CreateSeuratObject(counts = KCl,min.cells = 1,min.features = 1)  
+#3601 nuclei total 
+
+#Identify the percentage of reads mapping to mitochondrial genes 
+Veh <- PercentageFeatureSet(Veh, pattern = "^Mt-", col.name = "percent_mito")
+DA  <- PercentageFeatureSet(DA, pattern = "^Mt-", col.name = "percent_mito")
+SKF <- PercentageFeatureSet(SKF, pattern = "^Mt-", col.name = "percent_mito")
+KCl <- PercentageFeatureSet(KCl, pattern = "^Mt-", col.name = "percent_mito")
+
+#Subset data to have greater than 200 features and less than 5% of reads mapping to mitochondrial genes 
+Veh <- subset(x = Veh, subset  =  nFeature_RNA > 200 & percent_mito < 5) 
+DA  <- subset(x = DA, subset  =  nFeature_RNA > 200 & percent_mito < 5) 
+SKF <- subset(x = SKF, subset =  nFeature_RNA > 200 & percent_mito < 5) 
+KCl <- subset(x = KCl, subset =  nFeature_RNA > 200 & percent_mito < 5) 
+
+
+# #Replot to visualize the QC metrics following the subset 
+VlnPlot(Veh, features = c("nFeature_RNA", "nCount_RNA", "percent_mito"), ncol = 3,pt.size = 0)
+VlnPlot(DA, features = c("nFeature_RNA", "nCount_RNA", "percent_mito"), ncol = 3,pt.size = 0)
+VlnPlot(SKF, features = c("nFeature_RNA", "nCount_RNA", "percent_mito"), ncol = 3,pt.size = 0)
+VlnPlot(KCl, features = c("nFeature_RNA", "nCount_RNA", "percent_mito"), ncol = 3,pt.size = 0)
+
+Veh <- NormalizeData(Veh, normalization.method = "LogNormalize", scale.factor = 10000)
+DA <- NormalizeData(DA, normalization.method = "LogNormalize", scale.factor = 10000)
+SKF <- NormalizeData(SKF, normalization.method = "LogNormalize", scale.factor = 10000)
+KCl <- NormalizeData(KCl, normalization.method = "LogNormalize", scale.factor = 10000)
+
+Veh <- FindVariableFeatures(Veh, selection.method = "vst", nfeatures = 2000)
+DA  <- FindVariableFeatures(DA, selection.method = "vst", nfeatures = 2000)
+SKF <- FindVariableFeatures(SKF, selection.method = "vst", nfeatures = 2000)
+KCl <- FindVariableFeatures(KCl, selection.method = "vst", nfeatures = 2000)
+
+#Integrate all datasets 
+Veh$Stim  <- "Veh"
+DA$Stim  <- "DA"
+SKF$Stim <- "SKF"
+KCl$Stim <- "KCl"
+
+
+#Now integrate the data
+Culture_log <- FindIntegrationAnchors(object.list = list(Veh,DA,SKF,KCl), dims = 1:10)
+Culture_log  <- IntegrateData(anchorset = Culture_log,dims = 1:10)
+
+DefaultAssay(Culture_log) <- "integrated"
+
+# Run the standard workflow for visualization and clustering
+Culture_log <- ScaleData(Culture_log,verbose = FALSE)
+Culture_log <- RunPCA(Culture_log,npcs = 10 ,verbose = FALSE) #Compute 50 npcs by default
+# Dimensionality reduction and Clustering
+Culture_log <- RunUMAP(Culture_log,reduction = "pca", dims = 1:10)
+Culture_log <- FindNeighbors(Culture_log, reduction = "pca", dims = 1:10)
+
+Culture_log <- FindClusters(Culture_log, resolution = 0.1)
+
+
+#Add the cell-type identities 
+Culture_log <- RenameIdents(object = Culture_log,
+                            "0" = "GABAergic",
+                            "1" = "Drd1-MSN",
+                            "2" = "Grm8-MSN",
+                            "3" = "Polydendrocyte",
+                            "4" = "Drd2-MSN")
+#Make a metadata column for Celltype
+Culture_log$CellType <- Idents(Culture_log)
+
+#Plot UMAP
+DimPlot(object = Culture_log,reduction = "umap",label = TRUE) + NoLegend() 
+```
+
+```{r SessionInfo}
+sessionInfo()
+```
