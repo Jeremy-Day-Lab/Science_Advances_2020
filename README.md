@@ -1,26 +1,24 @@
 # **Science_Advances_2020**
 
 
-This page contains R and Python code for analysis of single-nucleus RNA-seq (snRNA-seq) datasets from "A dopamine-induced gene expression signature regulates neuronal function and cocaine response" [DOI] (https://doi.org/10.1101/781872). 
+This page contains R and Python code for analysis of single-nucleus RNA-seq (snRNA-seq) datasets from "A dopamine-induced gene expression signature regulates neuronal function and cocaine response" [DOI](https://doi.org/10.1101/781872). 
 
 
 ## **Study design**
 
 snRNA-seq datasets generated here were obtained from two experimental preparations:
 
-1) The rat nucleus accumbens (NAc), with samples taken from four experimental groups:
+1. The rat nucleus accumbens (NAc), with samples taken from four experimental groups:
+	*Male adult rats, 1hr following saline injection  
+	*Male adult rats, 1hr following cocaine injection (20mg/kg, I.P.)  
+	*Female adult rats, 1hr following saline injection  
+	*Female adult rats, 1hr following cocaine injection (20mg/kg, I.P.)  
 
-*Male adult rats, 1hr following saline injection  
-*Male adult rats, 1hr following cocaine injection (20mg/kg, I.P.)  
-*Female adult rats, 1hr following saline injection  
-*Female adult rats, 1hr following cocaine injection (20mg/kg, I.P.)  
-
-2) Primary striatal neurons (mixed from male and female E18 rat brains and cultured to DIV11) from four experimental groups:
-
-*Vehicle (media alone, 1hr)  
-*Dopamine (50µM, 1hr)  
-*SKF-38393 (1µM, 1hr)  
-*Potassium chloride (25mM, 1hr)  
+2. Primary striatal neurons (mixed from male and female E18 rat brains and cultured to DIV11) from four experimental groups:
+	*Vehicle (media alone, 1hr)  
+	*Dopamine (50µM, 1hr)  
+	*SKF-38393 (1µM, 1hr)  
+	*Potassium chloride (25mM, 1hr)  
 
 Datasets in this manuscript were generated using 10X Genomics Chromium Single Cell 3’ library construction kit to generate barcoded libraries for Illumina sequencing. For each dataset, we provide R Markdown and Word documents containing analysis parameters and code, as well as Python notebooks for generation of enhanced experimental signal (EES) values from the MELD package (Krishnaswamy Lab).  
 
