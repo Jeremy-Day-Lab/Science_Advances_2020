@@ -20,7 +20,7 @@ snRNA-seq datasets generated here were obtained from two experimental preparatio
 	*SKF-38393 (1µM, 1hr)  
 	*Potassium chloride (25mM, 1hr)  
 
-Datasets in this manuscript were generated using 10X Genomics Chromium Single Cell 3’ library construction kit to generate barcoded libraries for Illumina sequencing. For each dataset, we provide R Markdown and Word documents containing analysis parameters and code, as well as Python notebooks for generation of enhanced experimental signal (EES) values from the MELD package (Krishnaswamy Lab).  
+Datasets in this manuscript used the 10X Genomics Chromium Single Cell 3’ library construction kit to generate barcoded libraries for Illumina sequencing. For each dataset, we provide R Markdown and Word documents containing analysis parameters and code, as well as Python notebooks for generation of enhanced experimental signal (EES) values from the MELD package (Krishnaswamy Lab).  
 
 
 ## **Citation**
