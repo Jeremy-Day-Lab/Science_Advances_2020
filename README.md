@@ -8,13 +8,13 @@ This page contains R and Python code for analysis of single-nucleus RNA-seq (snR
 
 snRNA-seq datasets generated here were obtained from two experimental preparations:
 
-1. The rat nucleus accumbens (NAc), with samples taken from four experimental groups:
+1. The rat nucleus accumbens (NAc), with samples taken from four experimental groups:  
 	*Male adult rats, 1hr following saline injection  
 	*Male adult rats, 1hr following cocaine injection (20mg/kg, I.P.)  
 	*Female adult rats, 1hr following saline injection  
 	*Female adult rats, 1hr following cocaine injection (20mg/kg, I.P.)  
 
-2. Primary striatal neurons (mixed from male and female E18 rat brains and cultured to DIV11) from four experimental groups:
+2. Primary striatal neurons (mixed from male and female E18 rat brains and cultured to DIV11) from four experimental groups:  
 	*Vehicle (media alone, 1hr)  
 	*Dopamine (50µM, 1hr)  
 	*SKF-38393 (1µM, 1hr)  
