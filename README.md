@@ -32,7 +32,7 @@ Savell, K.E.*, Tuscher, J.J.*, Zipperly, M.E.*, Duke, C.G.*, Phillips III, R.A.*
 ## **Links**
 
 All Day lab resources may be found at the [Day Lab website](http://day-lab.org/resources)  
-[Ratlas Shiny App](https://day-lab.shinyapps.io/ratlas/) 
+[Ratlas Shiny App](https://day-lab.shinyapps.io/ratlas/)  
 [Published manuscript](https://advances.sciencemag.org/content/6/26/eaba4221)  
 [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/781872v1)  
 
