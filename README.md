@@ -1,7 +1,7 @@
 # **Science_Advances_2020**
 
 
-This page contains R and Python code for analysis of single-nucleus RNA-seq (snRNA-seq) datasets from "A dopamine-induced gene expression signature regulates neuronal function and cocaine response" [DOI](https://doi.org/10.1101/781872). 
+This page contains R and Python code for analysis of single-nucleus RNA-seq (snRNA-seq) datasets from "A dopamine-induced gene expression signature regulates neuronal function and cocaine response".  
 
 
 ## **Study design**
@@ -25,13 +25,15 @@ Datasets in this manuscript used the 10X Genomics Chromium Single Cell 3’ libr
 
 ## **Citation**
 
-Katherine E. Savell*, Morgan E. Zipperly*, Jennifer J. Tuscher*, Corey G. Duke*, Robert A.Phillips III*, Allison J. Bauman, Saakshi Thukral, Faraz A. Sultan, Nicholas A. Goska, Lara Ianov, Jeremy J. Day (2019). A dopamine-induced gene expression signature regulates neuronal function and cocaine response. *BioRxiv* [Link](https://www.biorxiv.org/content/10.1101/781872v1)
+Savell, K.E.*, Tuscher, J.J.*, Zipperly, M.E.*, Duke, C.G.*, Phillips III, R.A.*, Bauman, A.J., Thukral, S., Sultan, F.A., Goska, N.A., Ianov, L., & Day, J.J. (2020). A dopamine-induced gene expression signature regulates neuronal function and cocaine response. *Science Advances* 6(26): eaba4221.
+[Link](https://advances.sciencemag.org/content/6/26/eaba4221)
 
 
 ## **Links**
 
 All Day lab resources may be found at the [Day Lab website](http://day-lab.org/resources)  
-[Ratlas Shiny App](https://day-lab.shinyapps.io/ratlas/)  
+[Ratlas Shiny App](https://day-lab.shinyapps.io/ratlas/) 
+[Published manuscript](https://advances.sciencemag.org/content/6/26/eaba4221)  
 [BioRxiv preprint](https://www.biorxiv.org/content/10.1101/781872v1)  
 
 
